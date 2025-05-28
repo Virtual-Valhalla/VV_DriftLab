@@ -262,7 +262,7 @@ def main():
     init_db()
     
     # Crear la aplicación
-    application = Application.builder().token("7857170939:AAEl9-jiSFdH4wnMFoAsPMTWTgRv_iaok0o").build()
+    application = Application.builder().token("WACHUMSAAIDFADFSG").build()
     
     # Registrar manejadores
     application.add_handler(CommandHandler("start", start))
