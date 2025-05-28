@@ -11,8 +11,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# URL de tu Mini App (lo configuraremos más adelante)
-MINI_APP_URL = "https://tu-servidor.com/drift-game"  # Esto lo cambiaremos después
+# URL de tu Mini App
+MINI_APP_URL = "https://virtual-valhalla.github.io/VV_DriftLab/"  
 
 # Conexión a la base de datos
 def get_db_connection():
@@ -107,7 +107,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Crear teclado con botón para el juego
     keyboard = [
-        [InlineKeyboardButton("🏎️ Jugar Drift Racing", web_app=WebAppInfo(url=MINI_APP_URL))],
+        [InlineKeyboardButton("🏎️ Jugar Drift Racing", web_app=WebAppInfo(url=t.me/VirtualValhalla_bot))],
         [InlineKeyboardButton("👤 Mi Perfil", callback_data="profile"),
          InlineKeyboardButton("🏆 Ranking", callback_data="ranking")]
     ]
