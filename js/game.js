@@ -206,69 +206,92 @@ class Game {
      * Inicia el juego
      */
     startGame() {
-        // Cambiar estado del juego
-        this.gameState = 'playing';
-        
-        // Mostrar pantalla de juego y ocultar las demás
-        this.showScreen('game');
-        
-        // Crear objetos del juego
-        this.track = new Track({
-            name: this.selectedTrack,
-            width: this.canvas.width,
-            height: this.canvas.height
-        });
-        
-        // Posición inicial basada en la pista
-        const startPos = this.track.getStartPosition();
-        
-        this.car = new Car({
-            type: this.selectedCar,
-            x: startPos.x,
-            y: startPos.y,
-            angle: startPos.angle
-        });
-        
-        // Reiniciar puntuación
-        this.scoreboard.reset();
-        
-        // Reiniciar tiempo
-        this.timeRemaining = this.gameTime;
+    console.log("Starting game...");
+    
+    // Cambiar estado del juego
+    this.gameState = 'playing';
+    
+    // Mostrar pantalla de juego y ocultar las demás
+    this.showScreen('game');
+    
+    // Crear objetos del juego
+    this.track = new Track({
+        name: this.selectedTrack,
+        width: this.canvas.width,
+        height: this.canvas.height
+    });
+    
+    console.log("Track created:", this.track);
+    
+    // Posición inicial basada en la pista
+    const startPos = this.track.getStartPosition();
+    
+    this.car = new Car({
+        type: this.selectedCar,
+        x: startPos.x,
+        y: startPos.y,
+        angle: startPos.angle
+    });
+    
+    console.log("Car created:", this.car);
+    
+    // Reiniciar puntuación
+    this.scoreboard.reset();
+    
+    // Reiniciar tiempo
+    this.timeRemaining = this.gameTime;
+    document.getElementById('time-display').textContent = `${this.timeRemaining}s`;
+    
+    console.log("Starting game timer and loop");
+    
+    // Iniciar temporizador del juego
+    if (this.gameTimer) {
+        clearInterval(this.gameTimer);
+    }
+    
+    this.gameTimer = setInterval(() => {
+        this.timeRemaining--;
         document.getElementById('time-display').textContent = `${this.timeRemaining}s`;
         
-        // Iniciar temporizador del juego
-        this.gameTimer = setInterval(() => {
-            this.timeRemaining--;
-            document.getElementById('time-display').textContent = `${this.timeRemaining}s`;
-            
-            if (this.timeRemaining <= 0) {
-                this.endGame();
-            }
-        }, 1000);
-        
-        // Iniciar bucle del juego
-        this.lastTimestamp = performance.now();
-        this.gameLoop(this.lastTimestamp);
+        if (this.timeRemaining <= 0) {
+            this.endGame();
+        }
+    }, 1000);
+    
+    // Iniciar bucle del juego
+    this.lastTimestamp = performance.now();
+    if (this.animationFrame) {
+        cancelAnimationFrame(this.animationFrame);
     }
+    this.gameLoop(this.lastTimestamp);
+}
     
     /**
      * Bucle principal del juego
      * @param {number} timestamp - Marca de tiempo actual
      */
     gameLoop(timestamp) {
-        // Calcular delta time para movimientos suaves
-        const deltaTime = (timestamp - this.lastTimestamp) / 1000; // en segundos
-        this.lastTimestamp = timestamp;
+    // Calcular delta time para movimientos suaves
+    const deltaTime = (timestamp - this.lastTimestamp) / 1000; // en segundos
+    this.lastTimestamp = timestamp;
+    
+    // Solo actualizar si el juego está activo
+    if (this.gameState === 'playing') {
+        console.log("Game loop running, delta time:", deltaTime);
         
-        // Solo actualizar si el juego está activo
-        if (this.gameState === 'playing') {
-            this.update(deltaTime);
-            this.draw();
-            
-            // Continuar bucle
-            this.animationFrame = requestAnimationFrame((time) => this.gameLoop(time));
+        // Verificar que los objetos necesarios existen
+        if (!this.car || !this.track) {
+            console.error("Missing game objects:", {car: this.car, track: this.track});
+            return;
         }
+        
+        this.update(deltaTime);
+        this.draw();
+        
+        // Continuar bucle
+        this.animationFrame = requestAnimationFrame((time) => this.gameLoop(time));
     }
+}
     
     /**
      * Actualiza los elementos del juego
