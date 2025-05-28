@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Drift Masters</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+            background-color: #333;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #score-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            background-color: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="score-display">Puntos: 0</div>
+        <div class="controls">
+            <div class="control-btn" id="left-btn">←</div>
+            <div class="control-btn" id="accel-btn">↑</div>
+            <div class="control-btn" id="brake-btn">↓</div>
+            <div class="control-btn" id="right-btn">→</div>
+        </div>
+    </div>
+
+    <script>
+        // Inicialización de Telegram Mini App
+        const tgApp = window.Telegram.WebApp;
+        tgApp.expand();
+        
+        // Variables del juego
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score-display');
+        
+        // Ajustar tamaño del canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Objeto coche
+        const car = {
+            x: canvas.width / 2,
+            y: canvas.height - 100,
+            width: 30,
+            height: 50,
+            speed: 0,
+            acceleration: 0.2,
+            maxSpeed: 5,
+            friction: 0.95,
+            angle: 0,
+            angularVelocity: 0,
+            drifting: false,
+            score: 0,
+            driftTimer: 0,
+            skidmarks: []
+        };
+        
+        // Pistas y puntos de control para drift
+        const driftZones = [
+            { x: 100, y: 200, width: 200, height: 200, multiplier: 1 },
+            { x: 400, y: 300, width: 200, height: 200, multiplier: 2 },
+            // Añadir más zonas según necesites
+        ];
+        
+        // Controles táctiles
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        const accelBtn = document.getElementById('accel-btn');
+        const brakeBtn = document.getElementById('brake-btn');
+        
+        let isAccelerating = false;
+        let isBraking = false;
+        let isTurningLeft = false;
+        let isTurningRight = false;
+        
+        // Event listeners para controles táctiles
+        leftBtn.addEventListener('touchstart', () => { isTurningLeft = true; });
+        leftBtn.addEventListener('touchend', () => { isTurningLeft = false; });
+        
+        rightBtn.addEventListener('touchstart', () => { isTurningRight = true; });
+        rightBtn.addEventListener('touchend', () => { isTurningRight = false; });
+        
+        accelBtn.addEventListener('touchstart', () => { isAccelerating = true; });
+        accelBtn.addEventListener('touchend', () => { isAccelerating = false; });
+        
+        brakeBtn.addEventListener('touchstart', () => { isBraking = true; });
+        brakeBtn.addEventListener('touchend', () => { isBraking = false; });
+        
+        // Event listeners para teclado (para pruebas en desktop)
+        document.addEventListener('keydown', (event) => {
+            switch(event.key) {
+                case 'ArrowUp': isAccelerating = true; break;
+                case 'ArrowDown': isBraking = true; break;
+                case 'ArrowLeft': isTurningLeft = true; break;
+                case 'ArrowRight': isTurningRight = true; break;
+            }
+        });
+        
+        document.addEventListener('keyup', (event) => {
+            switch(event.key) {
+                case 'ArrowUp': isAccelerating = false; break;
+                case 'ArrowDown': isBraking = false; break;
+                case 'ArrowLeft': isTurningLeft = false; break;
+                case 'ArrowRight': isTurningRight = false; break;
+            }
+        });
+        
+        // Función para detectar drift
+        function isDrifting() {
+            // Simulación simple: drift ocurre cuando el coche está girando a velocidad alta
+            return Math.abs(car.angularVelocity) > 0.02 && car.speed > 3;
+        }
+        
+        // Función para actualizar el estado del juego
+        function update() {
+            // Actualizar velocidad según controles
+            if (isAccelerating) {
+                car.speed += car.acceleration;
+            }
+            if (isBraking) {
+                car.speed -= car.acceleration * 1.5;
+            }
+            
+            // Limitar velocidad
+            if (car.speed > car.maxSpeed) car.speed = car.maxSpeed;
+            if (car.speed < -car.maxSpeed / 2) car.speed = -car.maxSpeed / 2;
+            
+            // Aplicar fricción
+            car.speed *= car.friction;
+            
+            // Actualizar ángulo según controles
+            if (isTurningLeft) car.angularVelocity -= 0.003;
+            if (isTurningRight) car.angularVelocity += 0.003;
+            
+            // Limitar velocidad angular
+            const maxAngularVelocity = 0.05;
+            if (car.angularVelocity > maxAngularVelocity) car.angularVelocity = maxAngularVelocity;
+            if (car.angularVelocity < -maxAngularVelocity) car.angularVelocity = -maxAngularVelocity;
+            
+            // Actualizar ángulo
+            car.angle += car.angularVelocity;
+            
+            // Fricción para velocidad angular
+            car.angularVelocity *= 0.9;
+            
+            // Actualizar posición según velocidad y ángulo
+            car.x += Math.sin(car.angle) * car.speed;
+            car.y -= Math.cos(car.angle) * car.speed;
+            
+            // Detectar si está haciendo drift
+            car.drifting = isDrifting();
+            
+            // Si está haciendo drift, añadir marcas de derrape y aumentar puntuación
+            if (car.drifting) {
+                car.driftTimer++;
+                
+                // Añadir marcas de derrape cada pocos frames
+                if (car.driftTimer % 3 === 0) {
+                    car.skidmarks.push({
+                        x: car.x,
+                        y: car.y,
+                        angle: car.angle,
+                        alpha: 1 // para fadeout gradual
+                    });
+                }
+                
+                // Puntuación por drift
+                let driftScore = 0;
+                
+                // Comprobar si está en zona de drift
+                for (const zone of driftZones) {
+                    if (car.x > zone.x && car.x < zone.x + zone.width &&
+                        car.y > zone.y && car.y < zone.y + zone.height) {
+                        driftScore = 1 * zone.multiplier;
+                        break;
+                    }
+                }
+                
+                // Añadir puntuación base por drift
+                car.score += driftScore;
+                
+                // Actualizar visualización de puntos
+                scoreDisplay.textContent = `Puntos: ${Math.floor(car.score)}`;
+            } else {
+                car.driftTimer = 0;
+            }
+            
+            // Hacer que las marcas de derrape se desvanezcan
+            for (let i = car.skidmarks.length - 1; i >= 0; i--) {
+                car.skidmarks[i].alpha -= 0.01;
+                if (car.skidmarks[i].alpha <= 0) {
+                    car.skidmarks.splice(i, 1);
+                }
+            }
+            
+            // Mantener el coche dentro de los límites del canvas
+            if (car.x < 0) car.x = 0;
+            if (car.x > canvas.width) car.x = canvas.width;
+            if (car.y < 0) car.y = 0;
+            if (car.y > canvas.height) car.y = canvas.height;
+        }
+        
+        // Función para dibujar el juego
+        function draw() {
+            // Limpiar canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar pista
+            ctx.fillStyle = '#555';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar zonas de drift
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+            for (const zone of driftZones) {
+                ctx.fillRect(zone.x, zone.y, zone.width, zone.height);
+            }
+            
+            // Dibujar marcas de derrape
+            for (const mark of car.skidmarks) {
+                ctx.save();
+                ctx.translate(mark.x, mark.y);
+                ctx.rotate(mark.angle);
+                ctx.fillStyle = `rgba(0, 0, 0, ${mark.alpha})`;
+                ctx.fillRect(-5, -2, 10, 4);
+                ctx.restore();
+            }
+            
+            // Dibujar coche
+            ctx.save();
+            ctx.translate(car.x, car.y);
+            ctx.rotate(car.angle);
+            
+            // Cuerpo del coche
+            ctx.fillStyle = car.drifting ? '#ff5500' : '#3388ff';
+            ctx.fillRect(-car.width/2, -car.height/2, car.width, car.height);
+            
+            // Detalles del coche
+            ctx.fillStyle = '#000';
+            ctx.fillRect(-car.width/2, -car.height/2, car.width, 10); // frente
+            ctx.fillRect(-car.width/2, car.height/2 - 10, car.width, 10); // parte trasera
+            
+            ctx.restore();
+            
+            // Indicador de drift
+            if (car.drifting) {
+                ctx.fillStyle = '#ff0000';
+                ctx.font = '20px Arial';
+                ctx.fillText('¡DRIFT!', 20, 30);
+            }
+        }
+        
+        // Función principal del bucle del juego
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Iniciar el juego
+        gameLoop();
+        
+        // Enviar puntuación a Telegram cuando el juego termina o el usuario sale
+        tgApp.onEvent('viewportChanged', () => {
+            if (!tgApp.isExpanded) {
+                sendScore();
+            }
+        });
+        
+        function sendScore() {
+            const finalScore = Math.floor(car.score);
+            tgApp.sendData(JSON.stringify({
+                action: 'game_completed',
+                score: finalScore
+            }));
+            
+            // Mostrar alerta de puntuación
+            tgApp.showPopup({
+                title: '¡Partida terminada!',
+                message: `Has conseguido ${finalScore} puntos.`,
+                buttons: [{type: 'ok'}]
+            });
+        }
+    </script>
+</body>
+</html>
