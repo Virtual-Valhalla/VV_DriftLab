@@ -1,0 +1,49 @@
+{
+  "name": "Circuito Oval",
+  "trackImage": "track1.png",
+  "timeLimit": 60,
+  "startPosition": {
+    "x": 0.5,
+    "y": 0.85,
+    "angle": 0
+  },
+  "driftZones": [
+    {
+      "x": 0.1,
+      "y": 0.2,
+      "width": 0.2,
+      "height": 0.1,
+      "multiplier": 1.2
+    },
+    {
+      "x": 0.7,
+      "y": 0.2,
+      "width": 0.2,
+      "height": 0.1,
+      "multiplier": 1.2
+    },
+    {
+      "x": 0.1,
+      "y": 0.6,
+      "width": 0.2,
+      "height": 0.1,
+      "multiplier": 1.5
+    },
+    {
+      "x": 0.7,
+      "y": 0.6,
+      "width": 0.2,
+      "height": 0.1,
+      "multiplier": 1.5
+    }
+  ],
+  "obstacles": [
+    {
+      "x": 0.5,
+      "y": 0.5,
+      "width": 0.05,
+      "height": 0.05,
+      "type": "cone"
+    }
+  ]
+}

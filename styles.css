@@ -222,3 +222,46 @@ body, html {
 #tokens-earned {
     color: #ffcc00;
 }
+
+/* Estilos para el confeti */
+.confetti {
+    position: absolute;
+    z-index: 12;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* Mensaje de orientación */
+.orientation-message {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    flex-direction: column;
+}
+
+.message-content {
+    text-align: center;
+    color: white;
+}
+
+.rotate-icon {
+    font-size: 70px;
+    animation: rotate 2s infinite linear;
+    margin-bottom: 20px;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(90deg);
+    }
+}

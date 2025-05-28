@@ -232,15 +232,81 @@ async def web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         if data.get('action') == 'game_completed':
             score = int(data.get('score', 0))
-            await process_game_score(user.id, score)
+            tokens_earned = int(data.get('tokensEarned', 0))  # Tokens calculados por el juego
             
+            conn = get_db_connection()
+            
+            # Registrar la partida
+            conn.execute(
+                "INSERT INTO game_sessions (user_id, score, timestamp) VALUES (?, ?, ?)",
+                (user.id, score, datetime.now())
+            )
+            
+            # Actualizar puntos totales del usuario
+            conn.execute(
+                "UPDATE users SET points = points + ? WHERE telegram_id = ?",
+                (score, user.id)
+            )
+            
+            # Actualizar tokens ganados
+            conn.execute(
+                "UPDATE users SET tokens = tokens + ? WHERE telegram_id = ?",
+                (tokens_earned, user.id)
+            )
+            
+            conn.commit()
+            
+            # Obtener mejor puntuación del usuario
+            best_score = conn.execute(
+                "SELECT MAX(score) FROM game_sessions WHERE user_id = ?",
+                (user.id,)
+            ).fetchone()[0]
+            
+            # Obtener posición en el ranking
+            ranking_position = conn.execute(
+                "SELECT COUNT(*) + 1 FROM users WHERE points > (SELECT points FROM users WHERE telegram_id = ?)", 
+                (user.id,)
+            ).fetchone()[0]
+            
+            conn.close()
+            
+            # Crear mensaje personalizado con emojis y detalles
+            message = f"🏁 *¡Partida completada!* 🏁\n\n" \
+                      f"🏎️ Puntuación: *{score}* puntos\n" \
+                      f"💰 Tokens ganados: *{tokens_earned}*\n" \
+                      f"🏆 Mejor puntuación: {best_score}\n" \
+                      f"📊 Tu posición: #{ranking_position}\n\n"
+            
+            # Añadir mensaje motivador según la puntuación
+            if score > best_score:
+                message += "¡Nuevo récord personal! 🎉\n"
+            
+            if score > 1000:
+                message += "¡Increíble drift! Eres un maestro del volante. 👑"
+            elif score > 500:
+                message += "¡Gran técnica! Estás mejorando rápidamente. 👏"
+            else:
+                message += "¡Sigue practicando y mejora tu técnica! 💪"
+                
+            message += "\n\n¿Quieres intentarlo de nuevo?"
+            
+            # Botones para acciones rápidas
+            keyboard = [
+                [InlineKeyboardButton("🏎️ Jugar de Nuevo", web_app=WebAppInfo(url=MINI_APP_URL))],
+                [InlineKeyboardButton("👤 Mi Perfil", callback_data="profile"),
+                 InlineKeyboardButton("🏆 Ranking", callback_data="ranking")]
+            ]
+            
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            # Responder al usuario con resultados y botones
             await update.message.reply_text(
-                f"¡Has completado una partida con {score} puntos! 🎮\n"
-                f"Tu puntuación ha sido registrada y tus tokens actualizados."
+                message,
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
             )
     except Exception as e:
-        logging.error(f"Error processing web_app_data: {e}")
-        await update.message.reply_text("Ha ocurrido un error al procesar tu puntuación.")
+        logging.error
 
 # Procesar puntuación del juego
 async def process_game_score(user_id, score):

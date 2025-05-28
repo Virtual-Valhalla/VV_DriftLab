@@ -1,0 +1,56 @@
+{
+  "name": "Drift King Challenge",
+  "trackImage": "track3.png",
+  "timeLimit": 120,
+  "startPosition": {
+    "x": 0.8,
+    "y": 0.1,
+    "angle": 3.14
+  },
+  "driftZones": [
+    {
+      "x": 0.05,
+      "y": 0.1,
+      "width": 0.3,
+      "height": 0.15,
+      "multiplier": 2.0
+    },
+    {
+      "x": 0.7,
+      "y": 0.2,
+      "width": 0.25,
+      "height": 0.2,
+      "multiplier": 2.5
+    },
+    {
+      "x": 0.1,
+      "y": 0.5,
+      "width": 0.4,
+      "height": 0.15,
+      "multiplier": 3.0
+    }
+  ],
+  "obstacles": [
+    {
+      "x": 0.3,
+      "y": 0.3,
+      "width": 0.05,
+      "height": 0.05,
+      "type": "cone"
+    },
+    {
+      "x": 0.7,
+      "y": 0.6,
+      "width": 0.05,
+      "height": 0.05,
+      "type": "cone"
+    },
+    {
+      "x": 0.5,
+      "y": 0.7,
+      "width": 0.1,
+      "height": 0.05,
+      "type": "barrier"
+    }
+  ]
+}
